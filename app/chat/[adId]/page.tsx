@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -16,10 +16,48 @@ export default function ChatPage() {
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
 
+  // Ссылка на текущего пользователя, чтобы избежать проблем со старым контекстом в Realtime
+  const currentUserRef = useRef<any>(null);
+  useEffect(() => {
+    currentUserRef.current = currentUser;
+  }, [currentUser]);
+
+  // 1. Запрос разрешения на браузерные Push-уведомления
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      if (Notification.permission === 'default') {
+        Notification.requestPermission();
+      }
+    }
+  }, []);
+
+  // 2. Вспомогательные функции для звука и Push-уведомлений
+  const playNotificationSound = () => {
+    try {
+      const audio = new Audio(
+        'https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3'
+      );
+      audio.play().catch(() => {});
+    } catch (e) {}
+  };
+
+  const triggerPushNotification = (title: string, body: string) => {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      if (Notification.permission === 'granted' && document.hidden) {
+        new Notification(title, {
+          body: body,
+          icon: '/favicon.ico',
+        });
+      }
+    }
+  };
+
   useEffect(() => {
     async function initChat() {
       // 1. Проверяем текущего пользователя
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) {
         router.push('/login');
         return;
@@ -68,10 +106,21 @@ export default function ChatPage() {
           filter: `ad_id=eq.${adId}`,
         },
         (payload) => {
+          const incomingMsg = payload.new;
+
           setMessages((prev) => {
-            if (prev.some((m) => m.id === payload.new.id)) return prev;
-            return [...prev, payload.new];
+            if (prev.some((m) => m.id === incomingMsg.id)) return prev;
+            return [...prev, incomingMsg];
           });
+
+          // Если сообщение пришло от другого пользователя — запускаем звук и push
+          if (
+            currentUserRef.current &&
+            incomingMsg.sender_id !== currentUserRef.current.id
+          ) {
+            playNotificationSound();
+            triggerPushNotification('Новое сообщение на AL.KZ', incomingMsg.text);
+          }
         }
       )
       .subscribe();
@@ -143,13 +192,18 @@ export default function ChatPage() {
               ←
             </Link>
             <img
-              src={ad.images?.[0] || 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=800&q=80'}
+              src={
+                ad.images?.[0] ||
+                'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=800&q=80'
+              }
               alt={ad.title}
               className="w-10 h-10 object-cover rounded-lg"
             />
             <div>
               <h1 className="font-semibold text-sm line-clamp-1">{ad.title}</h1>
-              <p className="text-xs text-purple-400 font-bold">{ad.price?.toLocaleString()} ₸</p>
+              <p className="text-xs text-purple-400 font-bold">
+                {ad.price?.toLocaleString()} ₸
+              </p>
             </div>
           </div>
         </div>
@@ -184,7 +238,10 @@ export default function ChatPage() {
         </div>
 
         {/* Форма */}
-        <form onSubmit={handleSendMessage} className="p-3 border-t border-gray-800 flex gap-2 bg-[#0a0d14]/50">
+        <form
+          onSubmit={handleSendMessage}
+          className="p-3 border-t border-gray-800 flex gap-2 bg-[#0a0d14]/50"
+        >
           <input
             type="text"
             value={newMessage}
@@ -199,7 +256,6 @@ export default function ChatPage() {
             Отправить
           </button>
         </form>
-
       </div>
     </div>
   );
