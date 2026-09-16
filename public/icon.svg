@@ -1,0 +1,33 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Аметистовый градиент -->
+    <linearGradient id="amethyst-grad" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#7C3AED" />   <!-- violet-600 -->
+      <stop offset="50%" stop-color="#A855F7" />  <!-- purple-500 -->
+      <stop offset="100%" stop-color="#E02424" /> <!-- fuchsia-500 / neon accent -->
+    </linearGradient>
+    
+    <!-- Неоновое свечение под иконкой -->
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#A855F7" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+
+  <!-- Фон squircle -->
+  <rect width="512" height="512" rx="128" fill="url(#amethyst-grad)" filter="url(#glow)" />
+
+  <!-- Текст AL -->
+  <text 
+    x="50%" 
+    y="54%" 
+    dominant-baseline="middle" 
+    text-anchor="middle" 
+    fill="#FFFFFF" 
+    font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" 
+    font-weight="900" 
+    font-size="230" 
+    letter-spacing="-6"
+  >
+    AL
+  </text>
+</svg>
