@@ -16,13 +16,12 @@ export default function ChatPage() {
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
 
-  // Ссылка на текущего пользователя, чтобы избежать проблем со старым контекстом в Realtime
   const currentUserRef = useRef<any>(null);
   useEffect(() => {
     currentUserRef.current = currentUser;
   }, [currentUser]);
 
-  // 1. Запрос разрешения на браузерные Push-уведомления
+  // Запрос разрешения на Push-уведомления
   useEffect(() => {
     if (typeof window !== 'undefined' && 'Notification' in window) {
       if (Notification.permission === 'default') {
@@ -31,7 +30,6 @@ export default function ChatPage() {
     }
   }, []);
 
-  // 2. Вспомогательные функции для звука и Push-уведомлений
   const playNotificationSound = () => {
     try {
       const audio = new Audio(
@@ -54,17 +52,15 @@ export default function ChatPage() {
 
   useEffect(() => {
     async function initChat() {
-      // 1. Проверяем текущего пользователя
       const {
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) {
-        router.push('/login');
+        router.push('/auth');
         return;
       }
       setCurrentUser(user);
 
-      // 2. Получаем данные объявления
       const { data: adData, error: adError } = await supabase
         .from('ads')
         .select('*')
@@ -78,7 +74,6 @@ export default function ChatPage() {
       }
       setAd(adData);
 
-      // 3. Загружаем историю сообщений
       const { data: msgData } = await supabase
         .from('messages')
         .select('*')
@@ -94,7 +89,7 @@ export default function ChatPage() {
 
     initChat();
 
-    // 4. Подписка Realtime на стандартный канал
+    // Подписка на новые сообщения
     const channel = supabase
       .channel(`public:messages:ad_id=eq.${adId}`)
       .on(
@@ -113,7 +108,6 @@ export default function ChatPage() {
             return [...prev, incomingMsg];
           });
 
-          // Если сообщение пришло от другого пользователя — запускаем звук и push
           if (
             currentUserRef.current &&
             incomingMsg.sender_id !== currentUserRef.current.id
@@ -137,15 +131,18 @@ export default function ChatPage() {
     const textToSend = newMessage.trim();
     setNewMessage('');
 
-    // Определение получателя:
-    // Если пишет покупатель -> получатель продавец (ad.user_id)
-    // Если пишет продавец -> получатель автор первого/последнего входящего сообщения
+    // Определение получателя
     let targetReceiverId = ad.user_id;
 
     if (currentUser.id === ad.user_id) {
+      // Если пишет продавец — находим покупателя среди сообщений
       const incomingMsg = messages.find((m) => m.sender_id !== currentUser.id);
       if (incomingMsg) {
         targetReceiverId = incomingMsg.sender_id;
+      } else {
+        alert('Не удалось определить покупателя. Попробуйте еще раз.');
+        setNewMessage(textToSend);
+        return;
       }
     }
 
@@ -163,7 +160,7 @@ export default function ChatPage() {
       .single();
 
     if (error) {
-      alert('Ошибка при отправке: ' + error.message);
+      alert('Ошибка отправки: ' + error.message);
       setNewMessage(textToSend);
     } else if (data) {
       setMessages((prev) => {
@@ -176,7 +173,7 @@ export default function ChatPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0a0d14] text-white flex items-center justify-center">
-        <p className="text-gray-400">Загрузка чата...</p>
+        <p className="text-gray-400 text-sm">Загрузка чата...</p>
       </div>
     );
   }
@@ -185,7 +182,7 @@ export default function ChatPage() {
     <div className="min-h-screen bg-[#0a0d14] text-white py-6 px-4 flex flex-col justify-center items-center">
       <div className="w-full max-w-2xl bg-[#121621] border border-gray-800 rounded-2xl flex flex-col h-[80vh] shadow-2xl overflow-hidden">
         
-        {/* Шапка */}
+        {/* Шапка чата */}
         <div className="p-4 border-b border-gray-800 flex items-center justify-between bg-[#1a202c]/50">
           <div className="flex items-center gap-3">
             <Link href={`/ad/${ad.id}`} className="text-gray-400 hover:text-white text-sm">
@@ -208,7 +205,7 @@ export default function ChatPage() {
           </div>
         </div>
 
-        {/* Сообщения */}
+        {/* Список сообщений */}
         <div className="flex-1 p-4 overflow-y-auto space-y-3">
           {messages.length === 0 ? (
             <div className="text-center text-gray-500 text-sm mt-10">
@@ -237,7 +234,7 @@ export default function ChatPage() {
           )}
         </div>
 
-        {/* Форма */}
+        {/* Форма ввода */}
         <form
           onSubmit={handleSendMessage}
           className="p-3 border-t border-gray-800 flex gap-2 bg-[#0a0d14]/50"
@@ -251,11 +248,12 @@ export default function ChatPage() {
           />
           <button
             type="submit"
-            className="px-5 py-3 bg-purple-600 hover:bg-purple-500 text-sm font-bold rounded-xl transition-all shadow-lg shadow-purple-600/20"
+            className="px-5 py-3 bg-purple-600 hover:bg-purple-500 text-sm font-bold rounded-xl transition-all shadow-lg shadow-purple-600/20 cursor-pointer"
           >
             Отправить
           </button>
         </form>
+
       </div>
     </div>
   );
