@@ -11,14 +11,12 @@ export default function ProfilePage() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   
-  // Поля профиля
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
 
-  // Объявления и вкладки
   const [activeTab, setActiveTab] = useState<'active' | 'pending' | 'inactive'>('active');
   const [ads, setAds] = useState<any[]>([]);
 
@@ -31,7 +29,6 @@ export default function ProfilePage() {
       }
       setCurrentUser(user);
 
-      // Загружаем данные профиля из таблицы profiles
       const { data: profile } = await supabase
         .from('profiles')
         .select('*')
@@ -46,7 +43,6 @@ export default function ProfilePage() {
         setFullName(user.email?.split('@')[0] || '');
       }
 
-      // Загружаем объявления пользователя
       const { data: userAds } = await supabase
         .from('ads')
         .select('*')
@@ -60,7 +56,7 @@ export default function ProfilePage() {
     initProfile();
   }, [router]);
 
-  // Сохранение изменений профиля (без блокирующего alert)
+  // Сохранение изменений профиля с отладкой
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentUser) return;
@@ -74,15 +70,23 @@ export default function ProfilePage() {
       updated_at: new Date(),
     };
 
-    const { error } = await supabase.from('profiles').upsert(updates);
+    console.log('Отправляем данные в Supabase:', updates);
+
+    const { data, error } = await supabase
+      .from('profiles')
+      .upsert(updates)
+      .select();
 
     if (error) {
+      console.error('❌ ОШИБКА SUPABASE:', error.message, error.details, error.hint);
       alert('Ошибка при сохранении: ' + error.message);
+    } else {
+      console.log('✅ Успешно сохранено:', data);
+      alert('Профиль успешно сохранен!');
     }
     setSavingProfile(false);
   };
 
-  // Загрузка аватарки
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     try {
       if (!e.target.files || e.target.files.length === 0) return;
@@ -111,13 +115,11 @@ export default function ProfilePage() {
     }
   };
 
-  // Выход из аккаунта
   const handleLogout = async () => {
     await supabase.auth.signOut();
     router.push('/');
   };
 
-  // Удаление объявления
   const handleDeleteAd = async (adId: string) => {
     if (!confirm('Вы уверены, что хотите удалить это объявление?')) return;
 
@@ -129,7 +131,6 @@ export default function ProfilePage() {
     }
   };
 
-  // Фильтрация объявлений по вкладкам
   const filteredAds = ads.filter(ad => {
     if (activeTab === 'active') return !ad.status || ad.status === 'active';
     if (activeTab === 'pending') return ad.status === 'pending';
@@ -149,7 +150,6 @@ export default function ProfilePage() {
     <div className="min-h-screen bg-[#0a0d14] text-white py-10 px-4">
       <div className="max-w-4xl mx-auto space-y-8">
         
-        {/* Навигация */}
         <div className="flex justify-between items-center">
           <Link href="/" className="text-sm text-gray-400 hover:text-white transition-colors">
             ← На главную
@@ -170,12 +170,10 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* Настройка профиля */}
         <form onSubmit={handleSaveProfile} className="bg-[#121621] border border-gray-800 rounded-2xl p-6 shadow-xl space-y-6">
           <h2 className="text-lg font-bold">Настройки профиля</h2>
           
           <div className="flex flex-col sm:flex-row items-center gap-6">
-            {/* Аватарка */}
             <div className="relative group">
               <div className="w-24 h-24 rounded-2xl bg-purple-600 overflow-hidden flex items-center justify-center font-bold text-3xl uppercase shadow-lg shadow-purple-600/30 border-2 border-purple-500/30">
                 {avatarUrl ? (
@@ -191,7 +189,6 @@ export default function ProfilePage() {
               </label>
             </div>
 
-            {/* Основные поля ввода */}
             <div className="flex-1 w-full space-y-4">
               <div>
                 <label className="block text-xs font-medium text-gray-400 mb-1">Ваше имя</label>
@@ -244,7 +241,6 @@ export default function ProfilePage() {
           </div>
         </form>
 
-        {/* Секция «Мои объявления» */}
         <div className="space-y-4">
           <div className="flex justify-between items-center">
             <h2 className="text-xl font-bold">Мои объявления</h2>
@@ -256,7 +252,6 @@ export default function ProfilePage() {
             </Link>
           </div>
 
-          {/* Вкладки */}
           <div className="flex border-b border-gray-800 gap-2 overflow-x-auto">
             <button
               onClick={() => setActiveTab('active')}
@@ -290,7 +285,6 @@ export default function ProfilePage() {
             </button>
           </div>
 
-          {/* Список объявлений */}
           {filteredAds.length === 0 ? (
             <div className="bg-[#121621] border border-gray-800 rounded-2xl p-10 text-center space-y-3">
               <Package className="w-10 h-10 mx-auto text-gray-600" />
