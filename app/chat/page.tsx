@@ -129,37 +129,36 @@ export default function ChatPage() {
 
           <div className="flex-1 overflow-y-auto divide-y divide-slate-800/40">
             {chats.map((chat) => (
-  <Link
-    key={chat.id}
-    href="/chats"
-    className="w-full p-3 flex items-start gap-3 text-left hover:bg-slate-800/50 transition rounded-xl"
-  >
-    {/* Аватарка собеседника */}
-    <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-violet-600 to-fuchsia-600 flex items-center justify-center font-bold text-white shrink-0 text-sm">
-      {chat.user?.avatar || chat.user?.name?.[0] || 'U'}
-    </div>
+              <button
+                key={chat.id}
+                onClick={() => setActiveChatId(chat.id)}
+                className={`w-full p-4 flex items-start gap-3 text-left transition ${
+                  activeChatId === chat.id
+                    ? 'bg-purple-950/30 border-l-4 border-purple-500'
+                    : 'hover:bg-slate-800/30'
+                }`}
+              >
+                <div className="relative shrink-0">
+                  <div className="w-11 h-11 rounded-xl bg-gradient-to-tr from-violet-600 to-fuchsia-600 flex items-center justify-center font-bold text-white text-base">
+                    {chat.user.avatar}
+                  </div>
+                  {chat.user.online && (
+                    <span className="w-3 h-3 bg-emerald-500 border-2 border-slate-900 rounded-full absolute -bottom-0.5 -right-0.5" />
+                  )}
+                </div>
 
-    <div className="flex-1 min-w-0">
-      {/* Главное: Имя собеседника сверху */}
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-bold text-white truncate">
-          {chat.user?.name || 'Пользователь'}
-        </span>
-        <span className="text-[10px] text-slate-500 shrink-0">{chat.time}</span>
-      </div>
-
-      {/* Название товара под именем */}
-      <p className="text-[11px] text-purple-400 font-medium truncate mt-0.5">
-        📦 {chat.ad?.title}
-      </p>
-
-      {/* Текст последнего сообщения */}
-      <p className="text-xs text-slate-400 truncate mt-0.5">
-        {chat.lastMessage}
-      </p>
-    </div>
-  </Link>
-))}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-bold text-white truncate">{chat.user.name}</span>
+                    <span className="text-[10px] text-slate-500 shrink-0">{chat.time}</span>
+                  </div>
+                  <p className="text-xs text-purple-300 font-medium truncate mt-0.5">{chat.ad.title}</p>
+                  <p className="text-xs text-slate-400 truncate mt-1">{chat.lastMessage}</p>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
 
         {/* Правая панель: Окно переписки */}
         <div className="hidden md:flex flex-1 bg-slate-900/50 border border-slate-800/80 rounded-2xl flex-col overflow-hidden relative">
