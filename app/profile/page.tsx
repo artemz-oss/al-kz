@@ -43,7 +43,6 @@ export default function ProfilePage() {
         setPhone(profile.phone || '');
         setAvatarUrl(profile.avatar_url || '');
       } else {
-        // Если профиля еще нет, создаем базовый по email
         setFullName(user.email?.split('@')[0] || '');
       }
 
@@ -61,7 +60,7 @@ export default function ProfilePage() {
     initProfile();
   }, [router]);
 
-  // Сохранение изменений профиля
+  // Сохранение изменений профиля (без блокирующего alert)
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentUser) return;
@@ -79,8 +78,6 @@ export default function ProfilePage() {
 
     if (error) {
       alert('Ошибка при сохранении: ' + error.message);
-    } else {
-      alert('Профиль успешно обновлен!');
     }
     setSavingProfile(false);
   };
@@ -96,14 +93,12 @@ export default function ProfilePage() {
       const fileName = `${currentUser.id}-${Math.random()}.${fileExt}`;
       const filePath = `${fileName}`;
 
-      // Загружаем в бакет 'avatars' (создайте его в Supabase Storage, если нет)
       const { error: uploadError } = await supabase.storage
         .from('avatars')
         .upload(filePath, file);
 
       if (uploadError) throw uploadError;
 
-      // Получаем публичную ссылку
       const { data: { publicUrl } } = supabase.storage
         .from('avatars')
         .getPublicUrl(filePath);
@@ -175,7 +170,7 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* Настройка профиля (Карточка редактирования) */}
+        {/* Настройка профиля */}
         <form onSubmit={handleSaveProfile} className="bg-[#121621] border border-gray-800 rounded-2xl p-6 shadow-xl space-y-6">
           <h2 className="text-lg font-bold">Настройки профиля</h2>
           
@@ -249,7 +244,7 @@ export default function ProfilePage() {
           </div>
         </form>
 
-        {/* Секция «Мои объявления» с вкладками в стиле OLX */}
+        {/* Секция «Мои объявления» */}
         <div className="space-y-4">
           <div className="flex justify-between items-center">
             <h2 className="text-xl font-bold">Мои объявления</h2>
@@ -261,7 +256,7 @@ export default function ProfilePage() {
             </Link>
           </div>
 
-          {/* Вкладки OLX */}
+          {/* Вкладки */}
           <div className="flex border-b border-gray-800 gap-2 overflow-x-auto">
             <button
               onClick={() => setActiveTab('active')}
@@ -332,7 +327,6 @@ export default function ProfilePage() {
                     </div>
                   </div>
 
-                  {/* Кнопки управления (Просмотр, Редактировать, Удалить) */}
                   <div className="flex items-center gap-2 w-full md:w-auto justify-end border-t md:border-t-0 pt-3 md:pt-0 border-gray-800">
                     <Link
                       href={`/ad/${ad.id}`}
