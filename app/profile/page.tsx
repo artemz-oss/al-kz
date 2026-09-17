@@ -29,18 +29,29 @@ export default function ProfilePage() {
       }
       setCurrentUser(user);
 
-      const { data: profile } = await supabase
+      // Ищем профиль строго по ID текущего пользователя
+      let { data: profile } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', user.id)
         .single();
 
+      // Если профиля в базе еще нет — создаем его автоматически
+      if (!profile) {
+        const defaultName = user.email?.split('@')[0] || '';
+        const { data: newProfile } = await supabase
+          .from('profiles')
+          .insert([{ id: user.id, full_name: defaultName }])
+          .select()
+          .single();
+        
+        profile = newProfile;
+      }
+
       if (profile) {
         setFullName(profile.full_name || '');
         setPhone(profile.phone || '');
         setAvatarUrl(profile.avatar_url || '');
-      } else {
-        setFullName(user.email?.split('@')[0] || '');
       }
 
       const { data: userAds } = await supabase
@@ -56,7 +67,7 @@ export default function ProfilePage() {
     initProfile();
   }, [router]);
 
-  // Сохранение изменений профиля с отладкой
+  // Надежное сохранение изменений профиля с явным указанием onConflict
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentUser) return;
@@ -74,12 +85,14 @@ export default function ProfilePage() {
 
     const { data, error } = await supabase
       .from('profiles')
-      .upsert(updates)
+      .upsert(updates, { onConflict: 'id' })
       .select();
 
     if (error) {
       console.error('❌ ОШИБКА SUPABASE:', error.message, error.details, error.hint);
       alert('Ошибка при сохранении: ' + error.message);
+    } else if (!data || data.length === 0) {
+      alert('⚠️ База ответила ОК, но строка не записалась. Проверьте RLS-политики в Supabase.');
     } else {
       console.log('✅ Успешно сохранено:', data);
       alert('Профиль успешно сохранен!');
