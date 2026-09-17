@@ -3,7 +3,13 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
-import KazakhstanMap from '@/components/KazakhstanMap'; // Импортируем нашу новую карту
+import dynamic from 'next/dynamic';
+
+// Отключаем server-side rendering для карты, так как она работает только в браузере
+const KazakhstanMap = dynamic(() => import('@/components/KazakhstanMap'), {
+  ssr: false,
+  loading: () => <div className="text-center text-gray-500 py-6 text-xs">Загрузка карты...</div>,
+});
 
 export default function HomePage() {
   const [ads, setAds] = useState<any[]>([]);
