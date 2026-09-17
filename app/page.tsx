@@ -108,7 +108,7 @@ export default function HomePage() {
               }}
               className="bg-[#1a142b] text-gray-300 border border-[#2e2148] rounded-xl px-3 py-2.5 text-xs outline-none cursor-pointer focus:border-[#7b2cbf]"
             >
-              <ниже value="" className="bg-[#151022]">Вся страна (Казахстан)</option>
+              <option value="" className="bg-[#151022]">Вся страна (Казахстан)</option>
               {Object.keys(KZ_LOCATIONS).map((region) => (
                 <option key={region} value={region} className="bg-[#151022]">{region}</option>
               ))}
